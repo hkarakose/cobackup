@@ -1,6 +1,11 @@
-Answer this question by providing the source code. Do not provide any English text in your answers.
+Answer this question by providing the source code.
+Do not provide any English text in your answers.
 
-Implement a daemon process for mysql backup using Python.
+General guidelines to consider in Python implementations:
+1. Use logging instead of print statements.
+2. Prepare requirements.txt file
+
+Implement a daemon process for Mysql 8 backup using Python.
 Daemon process should have 2 independent scheduled jobs.
   1. Takes full mysql full backups in each 24 hours.
   2. Takes incremental mysql backups in each 5 minutes. Incremental backup should use the latest full backup.
@@ -8,20 +13,19 @@ Daemon process should have 2 independent scheduled jobs.
 Additional features:
 1. Record duration of each backup operation.
 2. Backups are uploaded to S3
-3. Use logging instead of print statements.
-4. The application should be configurable. Use a config file to fetch the parameters.
-5. Prepare requirements.txt file
-6. Only backup files which belong to last 14 days should be kept. Older files should be deleted. The duration of backup files to be kept should be configurable.
-7. Prepare .service file. Script will be installed under /opt/cobackup. The script will be executed by 'ec2-user'
+3. The application should be configurable. Use a config file to fetch the parameters. No need to fetch S3 access key and S3 security key.
+5. Only backup files which belong to last 14 days should be kept. Older files should be deleted. The duration of backup files to be kept should be configurable.
+6. Prepare .service file. Script will be installed under /opt/cobackup. The script will be executed by 'ec2-user'
 
-A utility script to recover from a backup is also required. The utility script should support:
+A utility script to recover from a backup is also required.
+The utility script should support:
 1. Recovery from a full backup
 2. Recovery from an incremental backup.
 3. Once the script is executed, the script should available backups and let the user select which backup to recover from. The list of available backups should be fetched from S3.
 4. Use the same config file with backup.py.
-5. Use logging instead of print statements.
 
-Implement an installation script using bash.  The script should support:
+And lastly, implement an installation script using bash.
+The script should support:
 1. downloads the bundle from https://amazon.com/cobackup.zip
 2. unzips the file under /opt/cobackup
 3. asks for configuration parameters and saves answers to config file

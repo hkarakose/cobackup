@@ -1,61 +1,79 @@
 import os
-import subprocess
 import logging
+import configparser
 import boto3
 
-# Configure logging
-logging.basicConfig(filename='recovery.log', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+# Load configuration from config.ini
+config = configparser.ConfigParser()
+config.read('config.ini')
 
-# Load configuration
-config = {
-    'mysql_user': 'your_mysql_username',
-    'mysql_password': 'your_mysql_password',
-    'backup_dir': '/path/to/backup/directory',
-    's3_bucket': 'your_s3_bucket_name'
-}
+s3_access_key = config.get('S3', 'AccessKey')
+s3_secret_key = config.get('S3', 'SecretKey')
+s3_bucket = config.get('S3', 'Bucket')
 
-# Set up S3 client
-s3 = boto3.client('s3')
+# Set up logging
+logging.basicConfig(filename='recovery.log', level=logging.INFO)
 
-def list_available_backups():
-    response = s3.list_objects_v2(Bucket=config['s3_bucket'], Prefix='full_')
-    backup_files = [obj['Key'] for obj in response['Contents']]
-    return backup_files
+# Function to list available backups from S3
+def list_backups():
+    s3_client = boto3.client(
+        's3',
+        aws_access_key_id=s3_access_key,
+        aws_secret_access_key=s3_secret_key
+    )
 
-def restore_from_backup(backup_file):
-    logging.info(f"Restoring from backup: {backup_file}")
-    backup_name = backup_file.split('/')[-1]
-    backup_path = os.path.join(config['backup_dir'], backup_name)
+    response = s3_client.list_objects_v2(Bucket=s3_bucket)
 
-    # Download backup file from S3
-    s3.download_file(config['s3_bucket'], backup_file, backup_path)
+    if 'Contents' in response:
+        backup_list = [obj['Key'] for obj in response['Contents']]
+        return backup_list
+    else:
+        return []
 
-    # Restore MySQL backup
-    cmd = f"mysql -u {config['mysql_user']} -p{config['mysql_password']} < {backup_path}"
-    subprocess.run(cmd, shell=True, check=True)
+# Function to recover from a full backup
+def recover_from_full_backup(backup_key):
+    backup_path = os.path.join('recovery', 'full_backup')
+    os.makedirs(backup_path, exist_ok=True)
 
-    logging.info("Restore completed successfully.")
+    s3_client = boto3.client(
+        's3',
+        aws_access_key_id=s3_access_key,
+        aws_secret_access_key=s3_secret_key
+    )
 
-if __name__ == '__main__':
-    # List available backups from S3
-    backup_files = list_available_backups()
-    if not backup_files:
-        logging.info("No available backups found.")
-        exit()
+    s3_client.download_file(s3_bucket, backup_key, os.path.join(backup_path, 'backup.sql'))
+    logging.info(f'Recovered from full backup: {backup_key}')
 
-    # Display available backups
-    print("Available Backups:")
-    for i, backup_file in enumerate(backup_files):
-        print(f"{i + 1}. {backup_file}")
+# Function to recover from an incremental backup
+def recover_from_incremental_backup(backup_key):
+    backup_path = os.path.join('recovery', 'incr_backup')
+    os.makedirs(backup_path, exist_ok=True)
 
-    # Prompt user to select a backup for recovery
-    selected_index = int(input("Select a backup to recover from (enter the number): "))
-    if selected_index < 1 or selected_index > len(backup_files):
-        logging.error("Invalid selection.")
-        exit()
+    s3_client = boto3.client(
+        's3',
+        aws_access_key_id=s3_access_key,
+        aws_secret_access_key=s3_secret_key
+    )
 
-    selected_backup = backup_files[selected_index - 1]
-    restore_from_backup(selected_backup)
+    s3_client.download_file(s3_bucket, backup_key, os.path.join(backup_path, 'backup.sql'))
+    logging.info(f'Recovered from incremental backup: {backup_key}')
 
-# Requirements.txt:
-# boto3==1.18.12
+# List available backups
+available_backups = list_backups()
+print("Available Backups:")
+for i, backup_key in enumerate(available_backups):
+    print(f"{i+1}. {backup_key}")
+
+# Prompt user to select a backup to recover from
+selected_backup = input("Select a backup to recover from (enter the corresponding number): ")
+
+try:
+    selected_index = int(selected_backup) - 1
+    if selected_index < 0 or selected_index >= len(available_backups):
+        print("Invalid backup selection.")
+    else:
+        selected_backup_key = available_backups[selected_index]
+        recover_from_full_backup(selected_backup_key)
+        # Add logic for incremental recovery if needed
+except ValueError:
+    print("Invalid input. Please enter a number.")

@@ -1,103 +1,119 @@
 import os
-import subprocess
-import logging
 import time
-import shutil
+import logging
 from datetime import datetime, timedelta
+import configparser
+import subprocess
 import boto3
 
-# Configure logging
-logging.basicConfig(filename='backup.log', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+# Load configuration from config.ini
+config = configparser.ConfigParser()
+config.read('config.ini')
 
-# Load configuration
-config = {
-    'mysql_user': 'your_mysql_username',
-    'mysql_password': 'your_mysql_password',
-    'backup_dir': '/path/to/backup/directory',
-    's3_bucket': 'your_s3_bucket_name',
-    'backup_duration_days': 14
-}
+mysql_user = config.get('MySQL', 'User')
+mysql_password = config.get('MySQL', 'Password')
+s3_access_key = config.get('S3', 'AccessKey')
+s3_secret_key = config.get('S3', 'SecretKey')
+s3_bucket = config.get('S3', 'Bucket')
+backup_directory = config.get('Backup', 'Directory')
+retention_days = int(config.get('Backup', 'RetentionDays'))
 
-# Set up S3 client
-s3 = boto3.client('s3')
+# Set up logging
+logging.basicConfig(filename='backup.log', level=logging.INFO)
 
-def take_full_backup():
-    start_time = time.time()
-    backup_name = f'full_{datetime.now().strftime("%Y%m%d%H%M%S")}.sql'
-    backup_path = os.path.join(config['backup_dir'], backup_name)
+# Function to execute a MySQL command
+def execute_mysql_command(command):
+    return subprocess.run(
+        ['mysql', '-u', mysql_user, '-p' + mysql_password, '-e', command],
+        capture_output=True,
+        text=True
+    )
 
-    # Perform MySQL full backup
-    cmd = f"mysqldump -u {config['mysql_user']} -p{config['mysql_password']} --all-databases > {backup_path}"
-    subprocess.run(cmd, shell=True, check=True)
-
-    # Upload backup file to S3
-    s3.upload_file(backup_path, config['s3_bucket'], backup_name)
-
-    # Clean up old backup files
-    cleanup_backup_files()
-
-    duration = time.time() - start_time
-    logging.info(f"Full backup '{backup_name}' created in {duration:.2f} seconds.")
-
-def take_incremental_backup():
+# Function to create a full backup
+def create_full_backup():
     start_time = time.time()
 
-    # Get the latest full backup file
-    backup_files = get_backup_files()
-    if not backup_files:
-        logging.warning("No full backup found. Skipping incremental backup.")
-        return
+    # Create a backup directory with the current timestamp
+    timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
+    backup_path = os.path.join(backup_directory, f'full_{timestamp}')
+    os.makedirs(backup_path, exist_ok=True)
 
-    latest_full_backup = backup_files[-1]
+    # Execute the mysqldump command to create the backup
+    result = execute_mysql_command(f'dump > {backup_path}/backup.sql')
 
-    backup_name = f'incremental_{datetime.now().strftime("%Y%m%d%H%M%S")}.sql'
-    backup_path = os.path.join(config['backup_dir'], backup_name)
+    # Upload the backup file to S3
+    s3_client = boto3.client(
+        's3',
+        aws_access_key_id=s3_access_key,
+        aws_secret_access_key=s3_secret_key
+    )
+    s3_key = f'full_{timestamp}/backup.sql'
+    s3_client.upload_file(f'{backup_path}/backup.sql', s3_bucket, s3_key)
 
-    # Perform MySQL incremental backup
-    cmd = f"mysqldump -u {config['mysql_user']} -p{config['mysql_password']} --all-databases --no-create-info --skip-lock-tables --skip-comments --single-transaction --flush-logs --master-data=2 --order-by-primary > {backup_path}"
-    subprocess.run(cmd, shell=True, check=True)
+    # Delete the local backup file
+    os.remove(f'{backup_path}/backup.sql')
 
-    # Upload backup file to S3
-    s3.upload_file(backup_path, config['s3_bucket'], backup_name)
+    # Calculate the duration and log the backup operation
+    end_time = time.time()
+    duration = end_time - start_time
+    logging.info(f'Full backup created: {backup_path}, Duration: {duration} seconds')
 
-    # Clean up old backup files
-    cleanup_backup_files()
+# Function to create an incremental backup
+def create_incremental_backup():
+    start_time = time.time()
 
-    duration = time.time() - start_time
-    logging.info(f"Incremental backup '{backup_name}' created in {duration:.2f} seconds.")
+    # Get the latest full backup directory
+    full_backup_dirs = [
+        dir_name for dir_name in os.listdir(backup_directory)
+        if dir_name.startswith('full_')
+    ]
+    latest_full_backup = max(full_backup_dirs)
 
-def cleanup_backup_files():
-    # Get all backup files
-    backup_files = get_backup_files()
+    # Create a backup directory with the current timestamp
+    timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
+    backup_path = os.path.join(backup_directory, f'incr_{timestamp}')
+    os.makedirs(backup_path, exist_ok=True)
 
-    # Calculate the date threshold for deleting old backup files
-    threshold_date = datetime.now() - timedelta(days=config['backup_duration_days'])
+    # Execute the mysqldump command to create the incremental backup
+    result = execute_mysql_command(
+        f'dump --where "timestamp > \'{latest_full_backup}\'" > {backup_path}/backup.sql'
+    )
 
-    for file in backup_files:
-        file_date = datetime.strptime(file.split('_')[1].split('.')[0], "%Y%m%d%H%M%S")
-        if file_date < threshold_date:
-            file_path = os.path.join(config['backup_dir'], file)
-            os.remove(file_path)
-            logging.info(f"Deleted old backup file: {file}")
+    # Upload the backup file to S3
+    s3_client = boto3.client(
+        's3',
+        aws_access_key_id=s3_access_key,
+        aws_secret_access_key=s3_secret_key
+    )
+    s3_key = f'incr_{timestamp}/backup.sql'
+    s3_client.upload_file(f'{backup_path}/backup.sql', s3_bucket, s3_key)
 
-def get_backup_files():
-    # Get all files in the backup directory
-    files = os.listdir(config['backup_dir'])
+    # Delete the local backup file
+    os.remove(f'{backup_path}/backup.sql')
 
-    # Filter backup files based on the filename pattern
-    backup_files = [f for f in files if f.startswith(('full_', 'incremental_'))]
+    # Calculate the duration and log the backup operation
+    end_time = time.time()
+    duration = end_time - start_time
+    logging.info(f'Incremental backup created: {backup_path}, Duration: {duration} seconds')
 
-    # Sort backup files by modification time
-    backup_files.sort(key=lambda x: os.path.getmtime(os.path.join(config['backup_dir'], x)))
+# Function to delete old backup files
+def delete_old_backups():
+    cutoff_date = datetime.now() - timedelta(days=retention_days)
 
-    return backup_files
+    for backup_name in os.listdir(backup_directory):
+        backup_path = os.path.join(backup_directory, backup_name)
+        if os.path.isdir(backup_path) and backup_name.startswith(('full_', 'incr_')):
+            backup_timestamp = datetime.strptime(backup_name[5:], '%Y%m%d%H%M%S')
+            if backup_timestamp < cutoff_date:
+                shutil.rmtree(backup_path)
+                logging.info(f'Deleted old backup: {backup_path}')
 
-if __name__ == '__main__':
-    # Take a full backup every 24 hours
-    while True:
-        take_full_backup()
-        time.sleep(86400)  # Sleep for 24 hours
+# Schedule full backup every 24 hours
+while True:
+    create_full_backup()
+    time.sleep(24 * 60 * 60)
 
-# Requirements.txt:
-# boto3==1.18.12
-
+# Schedule incremental backup every 5 minutes
+while True:
+    create_incremental_backup()
+    time.sleep(5 * 60)
