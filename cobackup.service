@@ -1,0 +1,12 @@
+[Unit]
+Description=MySQL Backup Service
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/python /path/to/backup.py
+WorkingDirectory=/path/to/backup/directory
+User=your_username
+Group=your_group
+
+[Install]
+WantedBy=multi-user.target
