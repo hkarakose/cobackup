@@ -4,6 +4,7 @@ Do not provide any English text in your answers.
 General guidelines to consider in Python implementations:
 1. Use logging instead of print statements.
 2. Prepare requirements.txt file
+3. Exception handling/logging if mysql connection fails
 
 Implement a daemon process for Mysql 8 backup using Python.
 Daemon process should have 2 independent scheduled jobs.
@@ -13,7 +14,7 @@ Daemon process should have 2 independent scheduled jobs.
 Additional features:
 1. Record duration of each backup operation.
 2. Backups are uploaded to S3
-3. The application should be configurable. Use a config file to fetch the parameters. No need to fetch S3 access key and S3 security key.
+3. The application should be configurable. Use a config file to fetch the parameters. AWS access key and AWS security key for S3 connectivity already exist in the system.
 5. Only backup files which belong to last 14 days should be kept. Older files should be deleted. The duration of backup files to be kept should be configurable.
 6. Prepare .service file. Script will be installed under /opt/cobackup. The script will be executed by 'ec2-user'
 
