@@ -11,7 +11,9 @@ fi
 
 # Perform MySQL database backup using mysqlpump and log the output
 log_message "$(date '+%Y-%m-%d %H:%M:%S') - Starting backup"
-mysqlpump --user="$MYSQL_USER" --password="$MYSQL_PASSWORD" --all-databases --result-file=$BACKUP_FILENAME 2>mysql_error
+
+# mysqlpump returns 0 even if it fails
+mysqlpump --user="$MYSQL_USER" --password="$MYSQL_PASSWORD" --all-databases --result-file=$BACKUP_FILENAME>mysql_error 2> >(tee /dev/stderr)
 mysql_exit=$?
 cat mysql_error >> $LOG_FILE
 if grep "Got error" mysql_error; then
