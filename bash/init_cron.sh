@@ -4,7 +4,8 @@
 source config.sh
 
 # Set the backup script path
-BACKUP_SCRIPT_PATH="$COBACKUP_HOME/bash/backup_script.sh"
+BACKUP_SCRIPT_PATH="$COBACKUP_HOME/bash/backup.sh"
+chmod 500 $BACKUP_SCRIPT_PATH
 
 # Create a temporary cron file
 CRON_FILE=$(mktemp)
@@ -20,5 +21,6 @@ crontab "$CRON_FILE"
 
 # Remove the temporary cron file
 rm "$CRON_FILE"
+
 
 echo "Cron job has been configured to execute $BACKUP_SCRIPT_PATH every 10 minutes."
