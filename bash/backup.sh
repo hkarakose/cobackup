@@ -1,10 +1,7 @@
-#!/bin/bash
+#!/bin/bash +x
 
 # Load configuration from the conf file
 source config.sh
-
-# Backup file name
-BACKUP_FILENAME="backup_$(date +%Y%m%d%H%M%S).sql"
 
 # Check if TO_EMAIL and FROM_EMAIL have been updated
 if [[ $TO_EMAIL == "CHANGE_IT@example.com" ]] || [[ $FROM_EMAIL == "sender@example.com" ]]; then
@@ -14,13 +11,14 @@ fi
 
 # Perform MySQL database backup using mysqlpump and log the output
 log_message "$(date '+%Y-%m-%d %H:%M:%S') - Starting backup"
-mysqlpump --user="$MYSQL_USER" --password="$MYSQL_PASSWORD" --all-databases >>"$LOG_FILE" 2>mysql_error
-cat mysql_error >>$LOG_FILE
+mysqlpump --user="$MYSQL_USER" --password="$MYSQL_PASSWORD" --all-databases --result-file=$BACKUP_FILENAME 2>mysql_error
+mysql_exit=$?
+cat mysql_error >> $LOG_FILE
 if grep "Got error" mysql_error; then
-  log_message "$(date '+%Y-%m-%d %H:%M:%S') - Backup failed. mysql error: $(cat mysql_error)"
-  send_email_notification "$(date '+%Y-%m-%d %H:%M:%S') - Backup failed"
+  log_message "$(date '+%Y-%m-%d %H:%M:%S') - Backup failed: mysql error"
+  send_email_notification "$(date '+%Y-%m-%d %H:%M:%S') - Backup failed. mysql error: $(cat mysql_error)"
   exit 1
-elif [ ! $? -eq 0 ]; then
+elif [ ! $mysql_exit -eq 0 ]; then
   log_message "$(date '+%Y-%m-%d %H:%M:%S') - Backup failed"
   send_email_notification "$(date '+%Y-%m-%d %H:%M:%S') - Backup failed"
   exit 1
@@ -39,13 +37,13 @@ else
 fi
 
 # Upload the compressed backup file to AWS S3 and log the output
-aws s3 cp "$BACKUP_FILE_PATH/$BACKUP_FILENAME.gz" "s3://${S3_BUCKET}/${S3_PREFIX}/${BACKUP_FILENAME}.gz" 2>>"$LOG_FILE"
-if [ $? -eq 0 ]; then
-  log_message "$(date '+%Y-%m-%d %H:%M:%S') - Upload to AWS S3 completed successfully"
-else
+aws s3 cp "$BACKUP_FILE_PATH/$BACKUP_FILENAME.gz" "s3://${S3_BUCKET}/${S3_PREFIX}/${BACKUP_FILENAME}.gz"
+if [ ! $? -eq 0 ]; then
   log_message "$(date '+%Y-%m-%d %H:%M:%S') - Upload to AWS S3 failed"
   send_email_notification "$(date '+%Y-%m-%d %H:%M:%S') - Upload to AWS S3 failed"
   exit 1
+else
+  log_message "$(date '+%Y-%m-%d %H:%M:%S') - Upload to AWS S3 completed successfully"
 fi
 
 # Remove the uncompressed backup file and log the output
