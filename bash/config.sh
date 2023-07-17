@@ -12,3 +12,9 @@ MYSQL_PASSWORD="your_password"
 S3_BUCKET="your_s3_bucket"
 S3_PREFIX="backup"
 
+# Function to log messages
+log_message() {
+  local timestamp=$(date +'%Y-%m-%d %H:%M:%S')
+  local message="$1"
+  echo "[$timestamp] $message" >>"$LOG_FILE"
+}

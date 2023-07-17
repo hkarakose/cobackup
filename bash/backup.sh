@@ -3,13 +3,6 @@
 # Load configuration from the conf file
 source config.sh
 
-# Function to log messages
-log_message() {
-  local timestamp=$(date +'%Y-%m-%d %H:%M:%S')
-  local message="$1"
-  echo "[$timestamp] $message" >>"$LOG_FILE"
-}
-
 # Backup file name
 BACKUP_FILENAME="backup_$(date +%Y%m%d%H%M%S).sql"
 
