@@ -1,7 +1,6 @@
 # Configuration file for backup script
 
 COBACKUP_HOME="/home/ec2-user/cobackup"
-BACKUP_FILE_PATH="$COBACKUP_HOME/bash"
 LOG_FILE="$COBACKUP_HOME/bash/cobackup.log"
 
 # MySQL database credentials
