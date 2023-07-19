@@ -13,12 +13,12 @@ fi
 log_message "$(date '+%Y-%m-%d %H:%M:%S') - Starting backup"
 
 # mysqlpump returns 0 even if it fails
-mysqlpump --user="$MYSQL_USER" --password="$MYSQL_PASSWORD" --all-databases --result-file=$BACKUP_FILENAME>mysql_error 2> >(tee /dev/stderr)
+mysqlpump --user="$MYSQL_USER" --password="$MYSQL_PASSWORD" --all-databases --users --result-file=$BACKUP_FILENAME>/tmp/mysql_error 2> >(tee /dev/stderr)
 mysql_exit=$?
-cat mysql_error >> $LOG_FILE
-if grep "Got error" mysql_error; then
+cat /tmp/mysql_error >> $LOG_FILE
+if grep "Got error" /tmp/mysql_error; then
   log_message "$(date '+%Y-%m-%d %H:%M:%S') - Backup failed: mysql error"
-  send_email_notification "$(date '+%Y-%m-%d %H:%M:%S') - Backup failed. mysql error: $(cat mysql_error)"
+  send_email_notification "$(date '+%Y-%m-%d %H:%M:%S') - Backup failed. mysql error: $(cat /tmp/mysql_error)"
   exit 1
 elif [ ! $mysql_exit -eq 0 ]; then
   log_message "$(date '+%Y-%m-%d %H:%M:%S') - Backup failed"

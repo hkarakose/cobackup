@@ -14,13 +14,12 @@ CRON_FILE=$(mktemp)
 crontab -l > "$CRON_FILE" 2>/dev/null
 
 # Append the new cron job entry
-echo "*/10 * * * * /bin/bash $(echo $BACKUP_SCRIPT_PATH)" >> "$CRON_FILE"
+echo "*/10 * * * * cd $(echo $COBACKUP_HOME)/bash && $(echo $BACKUP_SCRIPT_PATH)" >> "$CRON_FILE"
 
 # Install the updated cron file
 crontab "$CRON_FILE"
 
 # Remove the temporary cron file
 rm "$CRON_FILE"
-
 
 echo "Cron job has been configured to execute $BACKUP_SCRIPT_PATH every 10 minutes."
