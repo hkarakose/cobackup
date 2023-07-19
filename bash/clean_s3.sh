@@ -26,12 +26,3 @@ else
   echo "No files will be deleted"
 fi
 
-
-# Delete the objects older than the threshold date
-if [ -n "$objects" ]; then
-  files="$(jq -n --argjson objects "$objects" '{"Objects": $objects | split("\n") | map({"Key": .})}')"
-  echo "Files will be deleted: $files"
-  aws s3api delete-objects --bucket "$S3_BUCKET" --delete $files
-else
-  echo "No files will be deleted"
-fi
