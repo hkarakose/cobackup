@@ -5,7 +5,7 @@ import boto3
 import pymysql
 import gzip
 
-logging.basicConfig(filename='cobackup.log', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(filename='/dev/stdout', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 def download_backup_from_s3(bucket_name, backup_prefix):
     s3_client = boto3.client('s3')
@@ -29,6 +29,7 @@ def download_selected_backup(bucket_name, backup_key, destination_path):
         logging.error("Error downloading the selected backup from S3: %s", e)
 
 def unzip_file(source_path, destination_path):
+    logging.info("Unzipping " + source_path)
     with gzip.open(source_path, 'rb') as gz_file:
         with open(destination_path, 'wb') as dest_file:
             dest_file.write(gz_file.read())
@@ -43,26 +44,14 @@ def restore_mysql_backup(config_file, backup_file_path):
     db_user = mysql_config['user']
     db_password = mysql_config['password']
 
-    connection = None  # Set connection to None initially
-
+    # Restore the database using mysql command
+    command = f"mysql -h {db_host} -P {db_port} -u {db_user} -p{db_password} < {backup_file_path}"
     try:
-        connection = pymysql.connect(
-            host=db_host,
-            port=db_port,
-            user=db_user,
-            password=db_password,
-        )
-        cursor = connection.cursor()
-        with open(backup_file_path, 'r') as backup_file:
-            sql_dump = backup_file.read()
-            cursor.execute(sql_dump)
-        connection.commit()
+        logging.info("Starting database restore using mysql command.")
+        os.system(command)
         logging.info("Database restore successful.")
-    except pymysql.Error as e:
-        logging.error("Error restoring the database: %s", e)
-    finally:
-        if connection is not None:
-            connection.close()
+    except Exception as e:
+        logging.error("Error restoring the database using mysql command: %s", e)
 
 def main():
     config_file = 'config.ini'
@@ -91,13 +80,14 @@ def main():
     if 0 <= selected_backup_index < len(backups):
         selected_backup = backups[selected_backup_index]
         destination_file = os.path.join(destination_folder, os.path.basename(selected_backup))
+        logging.info("destination_file: " + destination_file)
         download_selected_backup(bucket_name, selected_backup, destination_file)
 
         # Unzip the downloaded backup
         unzipped_file_path = os.path.splitext(destination_file)[0]
         unzip_file(destination_file, unzipped_file_path)
 
-        restore_mysql_backup(config_file, destination_file)
+        restore_mysql_backup(config_file, unzipped_file_path)
     else:
         logging.error("Invalid backup selection.")
 
