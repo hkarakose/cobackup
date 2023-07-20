@@ -19,7 +19,7 @@ mysqlpump --user="$MYSQL_USER" --password="$MYSQL_PASSWORD" -h $MYSQL_HOST -p $M
 mysql_exit=$?
 cat /tmp/mysql_error >> $LOG_FILE
 if grep "Got error" /tmp/mysql_error; then
-  log_message "$(date '+%Y-%m-%d %H:%M:%S') - Backup failed: mysql error"
+  log_message "$(date '+%Y-%m-%d %H:%M:%S') - Backup failed: mysql error $(cat /tmp/mysql_error)"
   send_email_notification "$(date '+%Y-%m-%d %H:%M:%S') - Backup failed. mysql error: $(cat /tmp/mysql_error)"
   exit 1
 elif [ ! $mysql_exit -eq 0 ]; then
