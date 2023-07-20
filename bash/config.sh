@@ -17,6 +17,11 @@ TO_EMAIL="CHANGE_IT@example.com"
 FROM_EMAIL="sender@example.com"
 SUBJECT="Cobackup"
 
+LOG_FILE="$COBACKUP_HOME/bash/cobackup.log"
+if [ ! -f $LOG_FILE ]; then
+  touch $LOG_FILE
+fi
+
 # Function to log messages
 log_message() {
   local timestamp=$(date +'%Y-%m-%d %H:%M:%S')
