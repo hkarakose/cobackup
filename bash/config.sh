@@ -8,6 +8,8 @@ BACKUP_FILENAME="backup_$(date +%Y%m%d_%H%M%S).sql"
 # MySQL database credentials
 MYSQL_USER="your_username"
 MYSQL_PASSWORD="your_password"
+MYSQL_HOST="127.0.0.1"
+MYSQL_PORT="3306"
 
 # AWS S3 bucket information
 S3_BUCKET="your_s3_bucket"
