@@ -21,7 +21,7 @@ crontab -l > "$CRON_FILE" 2>/dev/null
 echo "*/10 * * * * cd $(echo $COBACKUP_HOME)/bash && $(echo $BACKUP_SCRIPT_PATH)" >> "$CRON_FILE"
 
 # Append the new cron job entry
-echo "0 0 0 * * cd $(echo $COBACKUP_HOME)/bash && $(echo $S3_SCRIPT_PATH)" >> "$CRON_FILE"
+echo "0 0 * * * cd $(echo $COBACKUP_HOME)/bash && $(echo $S3_SCRIPT_PATH)" >> "$CRON_FILE"
 
 # Install the updated cron file
 crontab "$CRON_FILE"
