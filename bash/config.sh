@@ -23,16 +23,3 @@ LOG_FILE="$COBACKUP_HOME/bash/cobackup.log"
 if [ ! -f $LOG_FILE ]; then
   touch $LOG_FILE
 fi
-
-# Function to log messages
-log_message() {
-  local timestamp=$(date +'%Y-%m-%d %H:%M:%S')
-  local message="$1"
-  echo "[$timestamp] $message" >>"$LOG_FILE"
-}
-
-# Function to send email notification
-send_email_notification() {
-  local message="$1"
-  echo "$message" | mail -r "$FROM_EMAIL" -s "$SUBJECT" "$TO_EMAIL"
-}
