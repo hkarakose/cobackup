@@ -38,7 +38,7 @@ log_message "$(date '+%Y-%m-%d %H:%M:%S') - Starting backup"
 # mysqlpump returns 0 even if it fails
 mysqlpump --user="$MYSQL_USER" --password="$MYSQL_PASSWORD" -h $MYSQL_HOST -P $MYSQL_PORT \
   --all-databases --exclude-databases=mysql --add-drop-table \
-  --users --exclude-users=root --add-drop-user --result-file=$BACKUP_FILENAME >/tmp/mysql_error 2> >(tee /dev/stderr)
+  --users --exclude-users=root,mysql.infoschema,mysql.session,mysql.sys --result-file=$BACKUP_FILENAME >/tmp/mysql_error 2> >(tee /dev/stderr)
 mysql_exit=$?
 cat /tmp/mysql_error >>$LOG_FILE
 if grep "Got error" /tmp/mysql_error; then
