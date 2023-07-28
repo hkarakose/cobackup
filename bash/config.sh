@@ -3,7 +3,7 @@
 COBACKUP_HOME="/home/ec2-user/cobackup"
 LOG_FILE="$COBACKUP_HOME/bash/cobackup.log"
 BACKUP_FILE_PATH="$COBACKUP_HOME/bash"
-BACKUP_FILENAME="backup_$(date +%Y%m%d_%H%M%S).sql"
+BACKUP_FILENAME="backup_$(date +%Y%m%d_%H%M%S)_$(hostname).sql"
 
 # MySQL database credentials
 MYSQL_USER="your_username"
