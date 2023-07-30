@@ -64,7 +64,7 @@ else
 fi
 
 # Upload the compressed backup file to AWS S3 and log the output
-aws s3 cp "$BACKUP_FILE_PATH/$BACKUP_FILENAME.gz" "s3://${S3_BUCKET}/${S3_PREFIX}/${BACKUP_FILENAME}.gz"
+aws s3 cp "$BACKUP_FILE_PATH/$BACKUP_FILENAME.gz" "s3://${S3_BUCKET}/${S3_PREFIX}/${BACKUP_FILENAME}.gz" 2>>"$LOG_FILE"
 if [ ! $? -eq 0 ]; then
   log_message "$(date '+%Y-%m-%d %H:%M:%S') - Upload to AWS S3 failed"
   send_aws_ses_notification "$(date '+%Y-%m-%d %H:%M:%S') - Upload to AWS S3 failed"
