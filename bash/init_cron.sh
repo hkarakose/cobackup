@@ -3,6 +3,8 @@
 # Load configuration from the conf file
 source config.sh
 
+export CRON_USER=ec2-user
+
 # Set the backup script path
 BACKUP_SCRIPT_PATH="$COBACKUP_HOME/bash/backup.sh"
 chmod 500 $BACKUP_SCRIPT_PATH
@@ -24,7 +26,7 @@ echo "*/10 * * * * cd $(echo $COBACKUP_HOME)/bash && $(echo $BACKUP_SCRIPT_PATH)
 echo "0 0 * * * cd $(echo $COBACKUP_HOME)/bash && $(echo $S3_SCRIPT_PATH)" >> "$CRON_FILE"
 
 # Install the updated cron file
-crontab "$CRON_FILE"
+crontab -u $CRON_USER "$CRON_FILE"
 
 # Remove the temporary cron file
 rm "$CRON_FILE"
