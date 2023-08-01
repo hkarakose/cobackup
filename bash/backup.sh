@@ -5,12 +5,6 @@ set -e
 # Load configuration from the conf file
 source config.sh
 
-# Define a function to handle errors
-handle_error() {
-    send_aws_ses_notification "An error occurred!"
-    exit 1
-}
-
 # Function to log messages
 log_message() {
   local timestamp=$(date +'%Y-%m-%d %H:%M:%S')
@@ -33,9 +27,6 @@ send_aws_ses_notification() {
     --destination "ToAddresses=['$TO_EMAIL']" \
     --message "Subject={Data='$SUBJECT'},Body={Text={Data='$message'}}"
 }
-
-# Set the trap to call the error-handling function on error
-trap 'handle_error' ERR
 
 # Check if TO_EMAIL and FROM_EMAIL have been updated
 if [[ $TO_EMAIL == "CHANGE_IT@example.com" ]] || [[ $FROM_EMAIL == "sender@example.com" ]]; then
