@@ -38,16 +38,16 @@ log_message "$(date '+%Y-%m-%d %H:%M:%S') - Starting backup"
 # mysqlpump returns 0 even if it fails
 mysqlpump --user="$MYSQL_USER" --password="$MYSQL_PASSWORD" -h $MYSQL_HOST -P $MYSQL_PORT \
   --all-databases --exclude-databases=mysql --add-drop-table \
-  --users --exclude-users=root,mysql.infoschema,mysql.session,mysql.sys --result-file=$BACKUP_FILENAME >/tmp/mysql_error 2> >(tee /dev/stderr)
+  --users --exclude-users=root,mysql.infoschema,mysql.session,mysql.sys --result-file=$BACKUP_FILENAME >mysqlpump.out 2> >(tee /dev/stderr)
 mysql_exit=$?
-cat /tmp/mysql_error >>$LOG_FILE
-if grep "Got error" /tmp/mysql_error; then
+cat mysqlpump.out >>$LOG_FILE
+if grep "Got error" mysqlpump.out; then
   log_message "$(date '+%Y-%m-%d %H:%M:%S') - Backup failed: mysql error $(cat /tmp/mysql_error)"
   send_aws_ses_notification "$(date '+%Y-%m-%d %H:%M:%S') - Backup failed. mysql error: $(cat /tmp/mysql_error)"
   exit 1
 elif [ ! $mysql_exit -eq 0 ]; then
-  log_message "$(date '+%Y-%m-%d %H:%M:%S') - Backup failed"
-  send_aws_ses_notification "$(date '+%Y-%m-%d %H:%M:%S') - Backup failed"
+  log_message "$(date '+%Y-%m-%d %H:%M:%S') - Backup failed: mysql error $mysql_exit"
+  send_aws_ses_notification "$(date '+%Y-%m-%d %H:%M:%S') - Backup failed. mysql error: $mysql_exit"
   exit 1
 else
   log_message "$(date '+%Y-%m-%d %H:%M:%S') - Backup completed successfully"
