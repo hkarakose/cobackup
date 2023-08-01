@@ -20,7 +20,7 @@ CRON_FILE=$(mktemp)
 crontab -l > "$CRON_FILE" 2>/dev/null
 
 # Add PATH variable
-echo "PATH=$(PATH)" >>$CRON_FILE
+echo "PATH=$(echo $PATH)" >>$CRON_FILE
 
 # Append the new cron job entry
 echo "*/10 * * * * cd $(echo $COBACKUP_HOME)/bash && $(echo $BACKUP_SCRIPT_PATH)" >> "$CRON_FILE"
