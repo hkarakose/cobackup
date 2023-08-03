@@ -48,16 +48,16 @@ def restore_mysql_backup(config_file, backup_file_path):
 	db_user = mysql_config['user']
 	db_password = mysql_config['password']
 
-    # Restore the database using mysql command
-    command = f"mysql -h {db_host} -P {db_port} -u {db_user} -p{db_password} < {backup_file_path}"
-    try:
-        logging.info("Starting database restore using mysql command.")
-        exit_status = os.system(command)
-        if exit_status != 0:
-            raise Exception(f"Database restore failed with exit status {exit_status}")
-        logging.info("Database restore successful.")
-    except Exception as e:
-        logging.error("Error restoring the database using mysql command: %s", e)
+	# Restore the database using mysql command
+	command = f"mysql -h {db_host} -P {db_port} -u {db_user} -p{db_password} < {backup_file_path}"
+	try:
+		logging.info("Starting database restore using mysql command.")
+		exit_status = os.system(command)
+		if exit_status != 0:
+			raise Exception(f"Database restore failed with exit status {exit_status}")
+		logging.info("Database restore successful.")
+	except Exception as e:
+		logging.error("Error restoring the database using mysql command: %s", e)
 
 def main():
 	config_file = 'config.ini'
