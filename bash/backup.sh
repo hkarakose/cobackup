@@ -4,29 +4,7 @@ set -e
 
 # Load configuration from the conf file
 source config.sh
-
-# Function to log messages
-log_message() {
-  local timestamp=$(date +'%Y-%m-%d %H:%M:%S')
-  local message="$1"
-  echo "[$timestamp] $message" >>"$LOG_FILE"
-}
-
-# Function to send email notification
-send_email_notification() {
-  local message="$1"
-  echo "$message" | mail -r "$FROM_EMAIL" -s "$SUBJECT" "$TO_EMAIL"
-}
-
-# Function to send email notification
-send_aws_ses_notification() {
-  local message="$1"
-
-  aws ses send-email \
-    --from "$FROM_EMAIL" \
-    --destination "ToAddresses=['$TO_EMAIL']" \
-    --message "Subject={Data='$SUBJECT'},Body={Text={Data='$message'}}"
-}
+source lib.sh
 
 # Check if TO_EMAIL and FROM_EMAIL have been updated
 if [[ $TO_EMAIL == "CHANGE_IT@example.com" ]] || [[ $FROM_EMAIL == "sender@example.com" ]]; then

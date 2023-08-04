@@ -23,3 +23,6 @@ LOG_FILE="$COBACKUP_HOME/bash/cobackup.log"
 if [ ! -f $LOG_FILE ]; then
   touch $LOG_FILE
 fi
+
+# Redis configuration
+REDIS_BACKUP_FILENAME="redis_$(date +%Y%m%d_%H%M%S)_$(hostname).rdb"
